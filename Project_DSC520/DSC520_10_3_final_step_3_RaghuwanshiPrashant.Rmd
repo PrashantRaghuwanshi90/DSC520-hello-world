@@ -1,0 +1,213 @@
+---
+title: 'Assignment: 10.3 Final Project Step 3'
+author: "Raghuwanshi, Prashant"
+date: '2021-08-14'
+output: pdf_document
+---
+
+# Introduction.
+
+### Credit score cards are a common risk control method in the financial industry. 
+### It uses personal information and data submitted by credit card applicants to predict the probability of future defaults and credit card borrowings. 
+### The bank is able to decide whether to issue a credit card to the applicant. Credit scores can objectively quantify the magnitude of risk.
+### I want to perform EDA on the top of credit card application data
+### split out the data and try to found the correlation , dependent variables, independent variables
+### outliers and biased for the given data set. this will help me researches on the best variables which the credit
+### card company give more importance while issuing new card to new card member
+
+# The problem statement you addressed.
+
+### 1) usually credit card companies are considering the historical credit report to analysis new card applicant financial strength
+### under this research i would like to find other variables like house, kids , family , education infromation of applicant 
+### will add more weight in the favour of  an applicant.
+### 2) as usual credit card companies mostly checking the credit scores for last 6 month to decide the applicant , under this 
+### research i am predecting instead of verifying hostory credit trails, is it better to consider the current credit liabilites of applicant
+
+# How you addressed this problem statement
+
+### 1) Data used 
+###    https://www.kaggle.com/rikdifos/credit-card-approval-prediction?select=credit_record.csv
+###    https://www.kaggle.com/rikdifos/credit-card-approval-prediction?select=application_record.csv
+### 2) my approach is focused on below lsited three points
+###    1 Getting a better understanding of data
+###    2 Identifying various data patterns
+###    3 Getting a better understanding of the problem statement
+### 3) Performed below steps to address above points
+###    1) Checked the Introductory Details About Data variables
+###    2) Descriping data -- Data Profiling
+###    3) Data cleaning steps
+###    4) Checking Duplicates
+###    5) Data Visualization -- By using plots
+###    6) Multi-Variate analysis Various Plots
+###    7) Analyse the regression and plots outcomes and find out the dependent and multiple independent varibales
+###    8) which is going to help me in identifying the closes fit independent variable
+###    9) create the trainging & test data models and find out the accuracy of applicant based on recent credit rating type
+###    9) Conclude the out come bases on regression fits and accuract results, and recomended the best fit dependent variables
+
+# Analysis
+
+### i have used various statistcis methodologies and plots to find out the answers of below questions and 
+### accordingly i have concluded the answer for the problem as stated under problem statement addressed section.
+### 1) find out outliers in all variables and removed outlier records from dataframe
+### 2) find out the correlation between numeric variables and plot the correlation using various technique
+### 3) fit liner regression model and find the most significant variables in df
+### 4) do credit default and applicant annual income have strong significance
+### 5) do applicant with long employment and age can be consider to qualify for credit card
+
+### Analysis Steps as Follows:
+
+### Required R packages for Analysis
+```{r}
+library(ggplot2)
+theme_set(theme_minimal())
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(QuantPsyc)
+library(gridExtra)
+library(car)
+library(PerformanceAnalytics)
+library(GGally)
+```
+### Analyse the correlation among variables
+### merge application and credit report for current month
+### perform EDA by using R programming
+###  What types of plots and tables will help you to illustrate the findings to your questions?
+
+### import and clean my data
+```{r}
+### Set the working directory to the root of your DSC 520 directory
+setwd("D:/MS_DataScience/DSC 520-Datastatiics.pdf/dsc520")
+### Load card data `data/credit_record.csv` to DF
+credit_df <- read.csv("data/credit_record.csv")
+### Cleaning records, by filtering out old records and keep current credit record
+credit_val <- filter(credit_df, MONTHS_BALANCE==0)
+head(credit_val)
+### Load credit card application data `data/application_record.csv` to DF
+appl_df <- read.csv("data/application_record.csv")
+### Join the credit data with application data and find out current credit status
+card_df <- merge(x = appl_df, y = credit_val, by = "ID", all.x = TRUE)
+head(card_df)
+### fixing missing value,defaulting the missed month balance & status as 0
+card_df$MONTHS_BALANCE <- factor(ifelse( is.na(card_df$MONTHS_BALANCE), 0, card_df$MONTHS_BALANCE))
+card_df$STATUS <- factor(ifelse( is.na(card_df$STATUS), 0, card_df$STATUS))
+### factoring variables
+card_df$CODE_GENDER <- factor(card_df$CODE_GENDER)
+card_df$FLAG_OWN_CAR <- factor(card_df$FLAG_OWN_CAR)
+card_df$FLAG_OWN_REALTY <- factor(card_df$FLAG_OWN_REALTY)
+card_df$NAME_EDUCATION_TYPE <- factor(card_df$NAME_EDUCATION_TYPE)
+```
+### slice and dice the dataset
+```{r}
+card_df1 <- dplyr::select(card_df, ID, CNT_CHILDREN, AMT_INCOME_TOTAL, DAYS_BIRTH, DAYS_EMPLOYED, STATUS)
+card_df2 <- filter(card_df1, STATUS==1)
+card_df3 <- dplyr::select(card_df2, CNT_CHILDREN, AMT_INCOME_TOTAL, DAYS_BIRTH, DAYS_EMPLOYED)
+dim(card_df3)
+```
+### Correlation Matrix
+```{r}
+chart.Correlation(card_df3, histogram=TRUE, pch=19)
+```
+### Analysis : In the above plot:
+### The distribution of each variable is shown on the diagonal.
+### On the bottom of the diagonal : the bivariate scatter plots with a fitted line are displayed
+### On the top of the diagonal : the value of the correlation plus the significance level as stars
+### Each significance level is associated to a symbol : p-values(0, 0.001, 0.01, 0.05, 0.1, 1) <=> symbols(???***???, ???**???, ???*???, ???.???, " ???)
+
+### correlation
+```{r}
+res <- cor(card_df3)
+round(res, 2)
+```
+### corrplot
+```{r}
+library(corrplot)
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+### Positive correlations are displayed in blue and negative correlations in red color. 
+### Color intensity and the size of the circle are proportional to the correlation coefficients. 
+### In the right side of the correlogram, the legend color shows the correlation coefficients and the corresponding colors.
+
+### boxplot to find out outlier and removed outlier value from my dataset
+```{r}
+boxplot(card_df3)
+boxplot(card_df3$AMT_INCOME_TOTAL)
+```
+### assign the outlier values into a vector
+```{r}
+outliers_AMT_INCOME_TOTAL <- boxplot(card_df3$AMT_INCOME_TOTAL, plot=FALSE)$out
+### finding the rows which contains outliers
+card_df3[which(card_df3$AMT_INCOME_TOTAL %in% outliers_AMT_INCOME_TOTAL),]
+card_df4 <- card_df3[-which(card_df3$AMT_INCOME_TOTAL %in% outliers_AMT_INCOME_TOTAL),]
+```
+### clean data after removing outlies records
+### Now boxplot is showing no outliers , you will notice that those pesky outliers are gone
+```{r}
+boxplot(card_df4)
+```
+### Anaysing the multiple variables by using scatter plots, pair plots, regression fit models
+
+### Scatter plots with multiple groups
+### Change point shapes by the levels of STATUS
+```{r}
+ggplot(card_df1, aes(x=DAYS_BIRTH, y=AMT_INCOME_TOTAL, shape=STATUS)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE, fullrange=TRUE)
+```
+### Change point shapes by the levels of STATUS
+```{r}
+ggplot(card_df, aes(x=DAYS_BIRTH, y=AMT_INCOME_TOTAL, shape=CODE_GENDER)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE, fullrange=TRUE)
+```
+### Pairplot
+```{r}
+pairs(card_df2)
+ggpairs(card_df2)
+ggpairs(card_df4)
+```
+### fit liner model
+```{r}
+linearMod <- lm(AMT_INCOME_TOTAL ~ STATUS + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df1) 
+summary(linearMod)
+plot(fitted(linearMod), resid(linearMod))
+qqnorm(resid(linearMod))
+```
+### categorical variables- fit log model
+```{r}
+logMod <- glm(STATUS ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod)
+```
+```{r}
+logMod2 <- glm(CODE_GENDER ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod2)
+```
+```{r}
+logMod3 <- glm(FLAG_OWN_REALTY ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod3)
+```
+```{r}
+logMod4 <- glm(FLAG_OWN_REALTY ~ STATUS + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod4)
+```
+
+# Implications
+
+### the conclusion that can be drawn from something although it is not explicitly stated.
+### 1) Most of the dependent variables likes gender tyep, flat own reality are deciding factors for approving new cards to applicant
+### 2) initial data summary looks good , but during EDA analysis i foud we have outliars in dataset
+### 3) some of the variables are having good corelations , like applicant age, kids counts, current credit rating
+### 4) seems the current credit status is not much dependant on annual income of applican and i got no correlation between credit status and annual income of applicant
+### 5)GENDER should be one the deciding factors, i found the good correlations of its amoungs multiple variables
+### so it shows genders factors is also important for new appliant
+
+# Limitations
+
+### I havent found much OF free data in web related to credit card transactions and and i believe the used credit score DATASET
+### might be near to the truth , so here in this research i have colcluded most of the finding bases on 
+### two data sets, however i believe , i need some more types of datasets for research like past trasnsactions,      ### multiple cards reports etc.
+### time constrants-> in depth alaysis need some more time and research 
+
+# Concluding Remarks
+
+### past credit history is not good enough to decide about the new credit card applicant. seems the other factors like age of applicant, gender, kids counts and home owner are the other variables whihc need to give some additional points while deciding the new applicant fit.
+### Total Annual income of applicant should not give much waitage for new card applicant

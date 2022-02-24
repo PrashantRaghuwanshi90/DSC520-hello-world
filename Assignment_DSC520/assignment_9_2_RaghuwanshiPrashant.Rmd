@@ -1,0 +1,113 @@
+---
+title: 'Assignment: 9.2 Exercise'
+author: "Raghuwanshi, Prashant"
+date: '2021-08-06'
+output: pdf_document
+---
+
+# Question no 1 : Complete assignment09
+
+### Fit a Logistic Regression Model to Thoracic Surgery Binary Dataset
+### For this problem, you will be working with the thoracic surgery data set from the University of California Irvine machine learning repository. 
+### This dataset contains information on life expectancy in lung cancer patients after surgery. The underlying thoracic surgery data is in ARFF format. 
+### This is a text-based format with information on each of the attributes. You can load this data using a package such as foreign or by cutting and pasting the data section into a CSV file.
+```{r}
+library(ggplot2)
+theme_set(theme_minimal())
+library(readxl)
+### Set the working directory to the root of your DSC 520 directory
+
+setwd("D:/MS_DataScience/DSC 520-Datastatiics.pdf/dsc520")
+
+### Load the `data/ThoraricSurgery.csv` to
+th_surgery_df <- read.csv("data/ThoraricSurgery.csv")
+str(th_surgery_df)
+### Assignment Instructions:
+```
+### Fit a binary logistic regression model to the data set that predicts whether or not the patient survived for one year (the Risk1Y variable) after the surgery.
+### Use the glm() function to perform the logistic regression. See Generalized Linear Models for an example. Include a summary using the summary() function in your results.
+```{r}
+logistic_model <- glm(Risk1Yr ~ ., family = binomial(), th_surgery_df)
+summary(logistic_model)
+### According to the summary, which variables had the greatest effect on the survival rate?
+### ANS seems PRE14 variable is having greatest effect on survival rate
+```
+### To compute the accuracy of your model, use the dataset to predict the outcome variable. 
+### The percent of correct predictions is the accuracy of your model. What is the accuracy of your model?
+### Subsetting the data and keeping the required variables
+```{r}
+surgery_df1 <- th_surgery_df[ ,c("Risk1Yr", "PRE14", "PRE17")]
+### Checking the dim
+dim(surgery_df1)
+### Converting to factor variables
+surgery_df1$Risk1Yr <- as.factor(surgery_df1$Risk1Yr)
+surgery_df1$PRE14 <- as.factor(surgery_df1$PRE14)
+surgery_df1$PRE17 <- as.factor(surgery_df1$PRE17)
+### Loading caret library
+require(caret)
+### Splitting the data into train and test
+index <- createDataPartition(surgery_df1$Risk1Yr, p = .70, list = FALSE)
+train <- surgery_df1[index, ]
+test <- surgery_df1[-index, ]
+### Training the model
+logistic_model1 <- glm(Risk1Yr ~ ., family = binomial(), train)
+### Checking the model
+summary(logistic_model1)
+### Converting from probability to actual output
+train$pred_Risk1Yr <- ifelse(logistic_model1$fitted.values >= 0.5, "False", "True")
+### Generating the classification table
+ctab_train <- table(train$Risk1Yr, train$pred_Risk1Yr)
+### Predicting in the test dataset
+pred_prob <- predict(logistic_model1, test, type = "response")
+### Generating the classification table
+ctab_train <- table(train$Risk1Yr, train$pred_Risk1Yr)
+### Converting from probability to actual output
+test$pred_Risk1Yr <- ifelse(pred_prob >= 0.5, "False", "True")
+# Generating the classification table
+ctab_test <- table(test$Risk1Yr, test$pred_Risk1Yr)
+ctab_test
+```
+### Accuracy = (TP + TN)/(TN + FP + FN + TP)
+# Accuracy in Training dataset
+```{r}
+accuracy_train <- sum(diag(ctab_train))/sum(ctab_train)*100
+accuracy_train
+# Accuracy in Test dataset
+accuracy_test <- sum(diag(ctab_test))/sum(ctab_test)*100
+accuracy_test
+```
+# 2 Fit a Logistic Regression Model
+### Fit a logistic regression model to the binary-classifier-data.csv dataset
+```{r}
+library(ggplot2)
+theme_set(theme_minimal())
+library(readxl)
+### Set the working directory to the root of your DSC 520 directory
+
+setwd("D:/MS_DataScience/DSC 520-Datastatiics.pdf/dsc520")
+
+### Load the `data/ThoraricSurgery.csv` to
+binary_df <- read.csv("data/binary-classifier-data.csv")
+str(binary_df)
+require(caret)
+### Splitting the data into train and test
+index_bin <- createDataPartition(binary_df$label, p = .70, list = FALSE)
+train_bin <- binary_df[index, ]
+test_bin <- binary_df[-index, ]
+### Training the model
+logistic_model_bin <- glm(label ~ x + y, family = binomial(), train_bin)
+### Checking the model
+summary(logistic_model_bin)
+### Converting from probability to actual output
+train_bin$pred_label <- ifelse(logistic_model_bin$fitted.values >= 0.5, 0, 1)
+### Generating the classification table
+ctab_train_bin <- table(train_bin$label, train_bin$pred_label)
+### Predicting in the test dataset
+pred_prob_bin <- predict(logistic_model_bin, test_bin, type = "response")
+### Converting from probability to actual output
+### Accuracy = (TP + TN)/(TN + FP + FN + TP)
+### Accuracy in Training dataset
+accuracy_train_bin <- sum(diag(ctab_train_bin))/sum(ctab_train_bin)*100
+accuracy_train_bin
+### Keep this assignment handy, as you will be comparing your results from this week to next week
+```

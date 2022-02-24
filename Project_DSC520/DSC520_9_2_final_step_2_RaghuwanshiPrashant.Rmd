@@ -1,0 +1,207 @@
+---
+title: "Assignment: 9.2 Final Project Step 2"
+author: "Raghuwanshi, Prashant"
+date: '2021-08-07'
+Note: Included Step 1 Details along with Step 2
+output: pdf_document
+---
+
+# Introduction
+
+### Credit score cards are a common risk control method in the financial industry. 
+### It uses personal information and data submitted by credit card applicants to predict the probability of future defaults and credit card borrowings. 
+### The bank is able to decide whether to issue a credit card to the applicant. Credit scores can objectively quantify the magnitude of risk.
+### I want to perform below EDA on the top of credit card application data
+### split out the data and try to found the correlation , dependent variables, independent variables
+### outliers and biased for the given data set. this will help me researches on the best variables which the credit
+### card company give more importance while issuing new card to  the best fited card member
+
+# Research questions
+
+### Q find out outliers in all variables and removed outlier records from dataframe
+### find out the correlation between numeric variables and plot the correlation using various technique
+### fit liner regression model and find the most significant variables in df
+### do credit default and applicant annual income have strong significance
+### do applicant with long employment and age can be consider to qualify for credit card
+
+# Approach
+
+### How your approach addresses (fully or partially) the problem.
+###my approach will focus on below lsited three points
+###1 Getting a better understanding of data
+###2 Identifying various data patterns
+###3 Getting a better understanding of the problem statement
+### below steps which requried to address above points
+### Checking Introductory Details About Data
+### Statistical Insight
+### Data cleaning
+### Checking Duplicates
+### Data Visualization
+### Multi-Variate analysisVarious Plots
+### Here EDA approach will give the right inofrmation for dependent and multiple independent varibales
+### which is going to help me in identifying the closes fit independent variable
+### which help researcher to recommend the card types to  the cities and gender types 
+
+# Data  (2 Datasets - but no requirement on number of fields or rows)
+
+### https://www.kaggle.com/rikdifos/credit-card-approval-prediction?select=credit_record.csv
+### https://www.kaggle.com/rikdifos/credit-card-approval-prediction?select=application_record.csv
+
+# Required Packages
+```{r}
+library(ggplot2)
+theme_set(theme_minimal())
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(QuantPsyc)
+library(gridExtra)
+library(car)
+library(PerformanceAnalytics)
+library("GGally")
+```
+# Plots and Table Needs
+
+###Correlation Matrix
+###Scatterplot
+###pairplot
+###Histogram
+###Boxplot
+
+# Questions for future steps
+
+### find out the correlation among variables
+### club application and credit report for current month
+### perform EDA by using R programming
+
+
+# How to import and clean my data
+```{r}
+### Set the working directory to the root of your DSC 520 directory
+setwd("D:/MS_DataScience/DSC 520-Datastatiics.pdf/dsc520")
+### Load card data `data/credit_record.csv` to DF
+credit_df <- read.csv("data/credit_record.csv")
+### Cleaning records, by filtering out old records and keep current credit record
+credit_val <- filter(credit_df, MONTHS_BALANCE==0)
+head(credit_val)
+
+### Load credit card application data `data/application_record.csv` to DF
+appl_df <- read.csv("data/application_record.csv")
+
+### Join the credit data with application data and find out current credit status
+card_df <- merge(x = appl_df, y = credit_val, by = "ID", all.x = TRUE)
+head(card_df)
+### fixing missing value,defaulting the missed month balance & status as 0
+card_df$MONTHS_BALANCE <- factor(ifelse( is.na(card_df$MONTHS_BALANCE), 0, card_df$MONTHS_BALANCE))
+card_df$STATUS <- factor(ifelse( is.na(card_df$STATUS), 0, card_df$STATUS))
+### factoring variables
+card_df$CODE_GENDER <- factor(card_df$CODE_GENDER)
+card_df$FLAG_OWN_CAR <- factor(card_df$FLAG_OWN_CAR)
+card_df$FLAG_OWN_REALTY <- factor(card_df$FLAG_OWN_REALTY)
+card_df$NAME_EDUCATION_TYPE <- factor(card_df$NAME_EDUCATION_TYPE)
+```
+# What does the final data set look like?
+
+### Preparing new data set with required City, Date, Card.Type, Exp.Type, Gender, Amount, Tier fields
+```{r}
+head(card_df)
+str(card_df)
+dim(card_df)
+summary(card_df)
+```
+# How do you plan to slice and dice the data?
+```{r}
+card_df1 <- dplyr::select(card_df, ID, CNT_CHILDREN, AMT_INCOME_TOTAL, DAYS_BIRTH, DAYS_EMPLOYED, STATUS)
+card_df2 <- filter(card_df1, STATUS==1)
+card_df3 <- dplyr::select(card_df2, CNT_CHILDREN, AMT_INCOME_TOTAL, DAYS_BIRTH, DAYS_EMPLOYED)
+dim(card_df3)
+```
+# Questions for future steps
+
+### Q find out outliers in all variables and removed outlier records from dataframe
+### find out the correlation between numeric variables and plot the correlation using various technique
+### fit liner regression model and find the most significant variables in df
+### do credit default and applicant annual income have strong significance
+### do applicant with long employment and age can be consider to qualify for credit card
+
+# What types of plots and tables will help you to illustrate the findings to your questions?
+```{r}
+### Correlation Matrix
+chart.Correlation(card_df3, histogram=TRUE, pch=19)
+### In the above plot:
+### The distribution of each variable is shown on the diagonal.
+### On the bottom of the diagonal : the bivariate scatter plots with a fitted line are displayed
+### On the top of the diagonal : the value of the correlation plus the significance level as stars
+### Each significance level is associated to a symbol : p-values(0, 0.001, 0.01, 0.05, 0.1, 1) <=> symbols(???***???, ???**???, ???*???, ???.???, " ???)
+```
+
+### correlation
+```{r}
+res <- cor(card_df3)
+round(res, 2)
+```
+### corrplot
+```
+library(corrplot)
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+### Positive correlations are displayed in blue and negative correlations in red color. 
+### Color intensity and the size of the circle are proportional to the correlation coefficients. 
+### In the right side of the correlogram, the legend color shows the correlation coefficients and the corresponding colors.
+```
+### boxplot to find out outlier and removed outlier value from my dataset
+```{r}
+boxplot(card_df3)
+boxplot(card_df3$AMT_INCOME_TOTAL)
+### Now you can assign the outlier values into a vector
+outliers_AMT_INCOME_TOTAL <- boxplot(card_df3$AMT_INCOME_TOTAL, plot=FALSE)$out
+### Check the results
+print(outliers_AMT_INCOME_TOTAL)
+### First you need find in which rows the outliers are
+card_df3[which(card_df3$AMT_INCOME_TOTAL %in% outliers_AMT_INCOME_TOTAL),]
+card_df4 <- card_df3[-which(card_df3$AMT_INCOME_TOTAL %in% outliers_AMT_INCOME_TOTAL),]
+### If you check now with boxplot, you will notice that those pesky outliers are gone
+boxplot(card_df4)
+```
+### Scatter plots with multiple groups
+```{r}
+# Change point shapes by the levels of STATUS
+ggplot(card_df1, aes(x=DAYS_BIRTH, y=AMT_INCOME_TOTAL, shape=STATUS)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE, fullrange=TRUE)
+# Change point shapes by the levels of STATUS
+ggplot(card_df, aes(x=DAYS_BIRTH, y=AMT_INCOME_TOTAL, shape=CODE_GENDER)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE, fullrange=TRUE)
+```
+### Pairplot
+```{r}
+pairs(card_df2)
+ggpairs(card_df2)
+ggpairs(card_df4)
+```
+# How could you summarize your data to answer key questions?
+```{r}
+linearMod <- lm(AMT_INCOME_TOTAL ~ STATUS + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df1) 
+summary(linearMod)
+
+plot(fitted(linearMod), resid(linearMod))
+
+qqnorm(resid(linearMod))
+```
+# What information is not self-evident
+```{r}
+logMod <- glm(STATUS ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod)
+logMod2 <- glm(CODE_GENDER ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod2)
+logMod3 <- glm(FLAG_OWN_REALTY ~ AMT_INCOME_TOTAL + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod3)
+logMod4 <- glm(FLAG_OWN_REALTY ~ STATUS + CNT_CHILDREN +DAYS_BIRTH + DAYS_EMPLOYED, data=card_df, family=binomial(link='logit')) 
+summary(logMod4)
+```
+# Do you plan on incorporating any machine learning techniques to answer your research questions? Explain
+### will do in final step
+
+# Questions for future steps
+### which ml techniques is suitable for my model
+### want to add some more questions based on plotted results
